@@ -20,3 +20,4 @@ Environment-Specific Variables and Secrets:
 4. Helm  
 5. ArgoCD
 6. AWS resources such as IAM, VPC, EKS, ALB, ACM, WAF, Route53
+7. Monitoring and alerts with Kube-Prometheus-stack & Grafana
