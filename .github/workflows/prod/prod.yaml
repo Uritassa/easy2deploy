@@ -4,12 +4,12 @@ on:
         branches:
         - prod
         paths:
-        - '0-terragrunt/prod/aws/**'
+        - '0-terragrunt/prod/aws/**' # define the path to trigger this workflow
     pull_request:
         branches:
         - prod
         paths:
-        - '0-terragrunt/prod/aws/**'
+        - '0-terragrunt/prod/aws/**' # define the path to trigger this workflow
 
 jobs:
     terragrunt-plan-workflow:

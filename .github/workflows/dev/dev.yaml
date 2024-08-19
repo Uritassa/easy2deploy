@@ -4,12 +4,12 @@ on:
         branches:
         - dev
         paths:
-        - '0-terragrunt/dev/aws/**' 
+        - '0-terragrunt/dev/aws/**'  # define the path to trigger this workflow
     pull_request:
         branches:
         - dev
         paths:
-        - '0-terragrunt/dev/aws/**'
+        - '0-terragrunt/dev/aws/**' # define the path to trigger this workflow
 
 jobs:
     terragrunt-plan-workflow:
@@ -21,7 +21,7 @@ jobs:
         uses: ./.github/workflows/plan.yaml
         with:
             environment: development
-            working_directory:  # Specific the working dir for example : './0-dev/aws/eu-central-1'
+            working_directory:  # Specify the working dir for example : './0-dev/aws/eu-central-1'
             aws-region:  # define the region, example: 'eu-central-1'
         secrets:
             token-github: ${{ secrets.TOKEN_GITHUB }}
@@ -36,7 +36,7 @@ jobs:
         uses: ./.github/workflows/apply.yaml
         with:
             environment: development
-            working_directory:  # Specific the working dir for example : './0-dev/aws/eu-central-1'
+            working_directory:  # Specify the working dir for example : './0-dev/aws/eu-central-1'
             aws-region:  # define the region, example: 'eu-central-1'
         secrets:
             token-github: ${{ secrets.TOKEN_GITHUB }}
