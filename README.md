@@ -12,3 +12,11 @@ IAM Policy and Role for GitHub Actions:
 Environment-Specific Variables and Secrets:
     Define the necessary variables and secrets for each environment (e.g., dev, prod) within your GitHub repository.
     These include details like the environment name, working directory, region, and the necessary cloud provider and GitHub secrets.
+
+### Technology stack include:
+1. AWS as a cloud provider
+2. Terraform and Terragrunt as a IaC tools
+3. Kubernetes for container orchestration
+4. Helm  
+5. ArgoCD
+6. AWS resources such as IAM, VPC, EKS, ALB, ACM, WAF, Route53
