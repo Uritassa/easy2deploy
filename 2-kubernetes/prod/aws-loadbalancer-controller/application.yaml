@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aws-load-balancer-controller
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-sync-failed.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-health-degraded.teams: ArgoCD
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    namespace: kube-system
+    server: 'https://kubernetes.default.svc'
+  source:
+    repoURL: https://aws.github.io/eks-charts
+    targetRevision: "1.7.2"
+    chart: aws-load-balancer-controller
+    helm:
+      values: |-
+        clusterName: projectx
+        serviceAccount:
+          name: aws-load-balancer-controller
+          annotations:
+            eks.amazonaws.com/role-arn: ALB-ROLE-ARN
+
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated: 
+      prune: true
+      selfHeal: true

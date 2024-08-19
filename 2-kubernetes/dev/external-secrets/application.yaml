@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-sync-failed.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-health-degraded.teams: ArgoCD
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    namespace: kube-system
+    server: 'https://kubernetes.default.svc'
+  source:
+    repoURL: https://charts.external-secrets.io
+    chart: external-secrets
+    targetRevision: "0.10.0"
+    helm:
+      values: |-
+        global:
+          nodeSelector:
+            nodegroup: toolbox
+        serviceAccount:
+          annotations:
+            eks.amazonaws.com/role-arn: ROLE-ARN
+        resources: 
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 512Mi
+        serviceMonitor:
+          enabled: true
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false
+    automated: 
+      prune: true
+      selfHeal: true

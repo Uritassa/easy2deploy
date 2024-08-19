@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus-alertmanager
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-sync-failed.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-health-degraded.teams: ArgoCD
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  source:
+    chart: alertmanager
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: 1.12.0
+    helm:
+      values: |
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 32Mi
+        podDisruptionBudget:
+          minAvailable: 0
+        config:
+          global:
+            opsgenie_api_url: https://api.opsgenie.com
+            opsgenie_api_key: APIKEY
+
+          receivers:
+            - name: opsgenie
+              opsgenie_configs:
+              - api_key: APIKEY
+                send_resolved: true
+                api_url: https://api.opsgenie.com
+                message: '{{.Alerts.Firing | len}} alert(s) firing'
+
+          route:
+            receiver: opsgenie
+
+        nodeSelector:
+          nodegroup: monitoring
+        persistence:
+          enabled: false
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=false
+    automated:
+      prune: true
+      selfHeal: true

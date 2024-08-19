@@ -1,0 +1,62 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-loki
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-sync-failed.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-sync-succeeded.teams: ArgoCD
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated: 
+      prune: true
+      selfHeal: true
+  project: default
+  destination:
+    namespace: monitoring
+    server: 'https://kubernetes.default.svc'
+  source:
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: grafana-loki
+    targetRevision: 4.6.6
+    helm:
+      values: |-
+        loki:
+          nodeSelector:
+            nodegroup: monitoring
+        promtail:
+          resourcesPreset: "nano"
+        gateway:
+          nodeSelector:
+            nodegroup: monitoring
+        compactor:
+          nodeSelector:
+            nodegroup: monitoring
+        distributor:
+          nodeSelector:
+            nodegroup: monitoring
+        querier:
+          nodeSelector:
+            nodegroup: monitoring
+        queryFrontend:
+          nodeSelector:
+            nodegroup: monitoring
+        memcachedchunks:
+          nodeSelector:
+            nodegroup: monitoring
+        memcachedfrontend:
+          nodeSelector:
+            nodegroup: monitoring
+        ingester:
+          nodeSelector:
+            nodegroup: monitoring
+
+        
+
+
+      

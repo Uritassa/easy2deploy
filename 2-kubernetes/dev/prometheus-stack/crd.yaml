@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus-stack-crds
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-sync-failed.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-health-degraded.teams: ArgoCD
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  source:
+    chart: prometheus-operator-crds
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: 13.0.2
+    helm:
+      values: |-
+
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true

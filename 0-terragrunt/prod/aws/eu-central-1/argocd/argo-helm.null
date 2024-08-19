@@ -1,0 +1,68 @@
+terraform {
+  source = "tfr:///terraform-module/release/helm?version=2.8.2"
+}
+
+include "root" {
+  path = find_in_parent_folders()
+}
+
+include "env" {
+  path           = find_in_parent_folders("env.hcl")
+  expose         = true
+  merge_strategy = "no_merge"
+}
+
+dependency "eks" {
+  config_path = "../eks"
+}
+
+inputs = {
+  namespace  = "argocd"
+  repository = "https://argoproj.github.io/argo-helm"
+
+  app = {
+    name          = "argocd"
+    version       = "7.4.0"
+    chart         = "argo-cd"
+    force_update  = true
+    wait          = false
+    recreate_pods = false
+    deploy        = 1
+  }
+
+  set = [
+    {
+      name  = "dex.enabled"
+      value = "false"
+    }
+  ]
+  values = []
+}
+
+
+# Generate the Helm provider configuration
+generate "helm_provider" {
+  path      = "helm-provider.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<EOF
+data "aws_eks_cluster" "eks" {
+  name = "${dependency.eks.outputs.cluster_name}"
+}
+
+data "aws_eks_cluster_auth" "eks" {
+  name = "${dependency.eks.outputs.cluster_name}"
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = data.aws_eks_cluster.eks.endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      args        = ["eks", "get-token", "--cluster-name", data.aws_eks_cluster.eks.name]
+      command     = "aws"
+    }
+  }
+}
+EOF
+}

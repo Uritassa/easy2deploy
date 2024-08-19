@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-status-unknown.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-sync-failed.teams: ArgoCD
+    notifications.argoproj.io/subscribe.on-health-degraded.teams: ArgoCD
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    namespace: cert-manager
+    server: 'https://kubernetes.default.svc'
+  source:
+    repoURL: https://charts.jetstack.io
+    targetRevision: "v1.14.2"
+    chart: cert-manager
+    helm:
+      values: |-
+        serviceAccount:
+          annotations:
+            eks.amazonaws.com/role-arn: ROLE-ARN
+        installCRDs: true
+        crds: 
+          enable: true
+        nodeSelector:
+          nodegroup: custom
+        webhook:
+          nodeSelector:
+            nodegroup: custom
+        cainjector:
+          nodeSelector:
+            nodegroup: custom
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated: 
+      prune: true
+      selfHeal: true

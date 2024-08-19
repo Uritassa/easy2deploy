@@ -1,0 +1,65 @@
+name: "Terragrunt plan Workflow"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      working_directory:
+        required: true
+        type: string
+      aws-region:
+        required: true
+        type: string
+    secrets:
+      aws-oidc-role:
+        required: true
+      token-github:
+        required: true
+
+jobs:
+  Terragrunt-plan:
+    environment: 
+      name: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+    steps:
+    - name: Git checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials from AWS account
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.aws-oidc-role }}
+        aws-region: ${{ inputs.aws-region }}
+        role-session-name: Github-OIDC-Session # When error message is "please check your action inputs" change the session name
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.8.3
+
+    - name: Setup Terragrunt v0.58.2
+      run: |
+          wget https://github.com/gruntwork-io/terragrunt/releases/download/v0.58.4/terragrunt_linux_amd64
+          mv terragrunt_linux_amd64 terragrunt
+          chmod +x terragrunt
+          sudo mv terragrunt /usr/local/bin/
+          terragrunt -v
+          
+
+    - name: Terragrunt Init
+      id: init    
+      run: terragrunt run-all init -terragrunt-non-interactive
+
+    - name: Terragrunt Plan
+      id: plan  
+      run: terragrunt run-all plan -terragrunt-non-interactive

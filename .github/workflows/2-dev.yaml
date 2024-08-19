@@ -1,0 +1,43 @@
+name: "development workflow"
+on:
+    push:
+        branches:
+        - dev
+        paths:
+        - '0-terragrunt/dev/aws/**' 
+    pull_request:
+        branches:
+        - dev
+        paths:
+        - '0-terragrunt/dev/aws/**'
+
+jobs:
+    terragrunt-plan-workflow:
+        if: ${{ github.event_name == 'pull_request' }}
+        permissions:
+            id-token: write
+            contents: read
+            pull-requests: write
+        uses: ./.github/workflows/0-plan.yaml
+        with:
+            environment: development
+            working_directory:  # Specific the working dir for example : './0-dev/aws/eu-central-1'
+            aws-region:  # define the region, example: 'eu-central-1'
+        secrets:
+            token-github: ${{ secrets.TOKEN_GITHUB }}
+            aws-oidc-role: ${{ secrets.AWS_OIDC_ROLE }}
+
+    terragrunt-apply-workflow:
+        if: ${{ github.event_name == 'push' }}
+        permissions:
+            id-token: write
+            contents: read
+            pull-requests: write
+        uses: ./.github/workflows/1-apply.yaml
+        with:
+            environment: development
+            working_directory:  # Specific the working dir for example : './0-dev/aws/eu-central-1'
+            aws-region:  # define the region, example: 'eu-central-1'
+        secrets:
+            token-github: ${{ secrets.TOKEN_GITHUB }}
+            aws-oidc-role: ${{ secrets.AWS_OIDC_ROLE }}
