@@ -1,15 +1,15 @@
-name: "production workflow"
+name: "development workflow"
 on:
     push:
         branches:
-        - prod
+        - dev
         paths:
-        - '0-terragrunt/prod/aws/**'
+        - '0-terragrunt/dev/aws/**' 
     pull_request:
         branches:
-        - prod
+        - dev
         paths:
-        - '0-terragrunt/prod/aws/**'
+        - '0-terragrunt/dev/aws/**'
 
 jobs:
     terragrunt-plan-workflow:
@@ -18,10 +18,10 @@ jobs:
             id-token: write
             contents: read
             pull-requests: write
-        uses: ./.github/workflows/0-plan.yaml
+        uses: ./.github/workflows/plan.yaml
         with:
-            environment: production
-            working_directory:  # Specific the working dir for example : './1-prod/aws/eu-central-1'
+            environment: development
+            working_directory:  # Specific the working dir for example : './0-dev/aws/eu-central-1'
             aws-region:  # define the region, example: 'eu-central-1'
         secrets:
             token-github: ${{ secrets.TOKEN_GITHUB }}
@@ -33,10 +33,10 @@ jobs:
             id-token: write
             contents: read
             pull-requests: write
-        uses: ./.github/workflows/1-apply.yaml
+        uses: ./.github/workflows/apply.yaml
         with:
-            environment: production
-            working_directory:  # Specific the working dir for example : './1-prod/aws/eu-central-1'
+            environment: development
+            working_directory:  # Specific the working dir for example : './0-dev/aws/eu-central-1'
             aws-region:  # define the region, example: 'eu-central-1'
         secrets:
             token-github: ${{ secrets.TOKEN_GITHUB }}
