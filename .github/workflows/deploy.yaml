@@ -1,0 +1,88 @@
+name: "Deploy to Kubernetes Cluster"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      working_directory:
+        required: true
+        type: string
+      aws-region:
+        required: true
+        type: string
+      cluster_name:
+        required: true
+        type: string
+      deployment_file:
+        required: true
+        type: string
+      deployment_file2:
+        required: false
+        type: string
+      deployment_file3:
+        required: false
+        type: string
+      image:
+        required: false
+        type: string
+      registry:
+        required: false
+        type: string
+      repository:
+        required: false
+        type: string
+      tag:
+        required: false
+        type: string
+    secrets:
+      aws-oidc-role:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy to Kubernetes Cluster
+    environment:
+      name: ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        id: login-aws
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.aws-oidc-role }}
+          aws-region: ${{ inputs.aws-region }}
+          role-session-name: github-actions-session
+          output-credentials: true
+
+      - name: Update image values in main deployment file
+        if: ${{ inputs.image && inputs.registry && inputs.repository && inputs.tag }}
+        run: |
+          sed -i 's/REGISTRY/${{ inputs.registry }}/g' ${{ inputs.deployment_file }}
+          sed -i 's/REPOSITORY/${{ inputs.repository }}/g' ${{ inputs.deployment_file }}
+          sed -i 's/TAG/${{ inputs.tag }}/g' ${{ inputs.deployment_file }}
+          cat ${{ inputs.deployment_file }}
+
+      - name: Configure kubectl for Amazon EKS
+        run: aws eks --region ${{ inputs.aws-region }} update-kubeconfig --name ${{ inputs.cluster_name }}
+        
+      - name: Deploy to Kubernetes
+        run: kubectl apply -f ${{ inputs.deployment_file }}
+
+
+      - name: Deploy optional file to Kubernetes
+        if: ${{ inputs.deployment_file2 }}
+        run: kubectl apply -f ${{ inputs.deployment_file2 }}
+
+      - name: Deploy optional file to Kubernetes
+        if: ${{ inputs.deployment_file3 }}
+        run: kubectl apply -f ${{ inputs.deployment_file3 }}

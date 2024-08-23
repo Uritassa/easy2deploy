@@ -1,0 +1,83 @@
+name: "Build and Push Docker Image"
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      working_directory:
+        required: true
+        type: string
+      aws-region:
+        required: true
+        type: string
+      ecr-repository:
+        required: true
+        type: string
+    secrets:
+      aws-oidc-role:
+        required: true
+
+jobs:
+  build-push:
+    name: Build and Push Docker Image to ECR
+    environment:
+      name: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+  
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working_directory }}
+
+    outputs:
+      image_output: ${{ steps.build-push.outputs.IMAGE }}
+      registry_output: ${{ steps.build-push.outputs.REGISTRY }}
+      repository_output: ${{ steps.build-push.outputs.REPOSITORY }}
+      tag_output: ${{ steps.build-push.outputs.TAG }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        id: login-aws
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.aws-oidc-role }}
+          aws-region: ${{ inputs.aws-region }}
+          role-session-name: github-actions-session
+          output-credentials: true
+
+      - name: Generate date tag
+        id: generate-date
+        run: |
+          DATE=$(date +"%H-%M-%S")
+          echo "TIME=$DATE" >> $GITHUB_ENV
+
+      - name: Login to Amazon ECR Private
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build
+        id: build-push  
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ inputs.ecr-repository }}
+          TAG: ${{ env.TIME }}
+        run: |
+          docker build -t $REGISTRY/$REPOSITORY:$TAG .
+          echo "IMAGE=$REGISTRY/$REPOSITORY:$TAG" >> $GITHUB_OUTPUT
+          echo "REGISTRY=$REGISTRY" >> $GITHUB_OUTPUT
+          echo "REPOSITORY=$REPOSITORY" >> $GITHUB_OUTPUT
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Push docker image
+        if: success()
+        env:
+          IMAGE: ${{ steps.build-push.outputs.IMAGE }}
+        run: docker push $IMAGE
